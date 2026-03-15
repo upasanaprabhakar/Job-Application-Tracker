@@ -4,6 +4,15 @@ const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 
+const isProd = process.env.NODE_ENV === 'production';
+
+const cookieOptions = (maxAge) => ({
+  httpOnly: true,
+  secure:   isProd,          // true on Render (HTTPS), false on localhost
+  sameSite: isProd ? 'none' : 'lax',  // 'none' required for cross-domain on prod
+  maxAge,
+});
+
 const register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -70,30 +79,13 @@ const login = async (req, res) => {
       data: { token: refreshToken, userId: user.id, expiresAt }
     });
 
-    // ✅ ACCESS TOKEN COOKIE
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: false,
-      maxAge: 15 * 60 * 1000
-    });
-
-    // ✅ REFRESH TOKEN COOKIE
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie('accessToken',  accessToken,  cookieOptions(15 * 60 * 1000));
+    res.cookie('refreshToken', refreshToken, cookieOptions(7 * 24 * 60 * 60 * 1000));
 
     res.json({
       message: 'Login successful',
       accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name
-      }
+      user: { id: user.id, email: user.email, name: user.name }
     });
 
   } catch (error) {
@@ -122,12 +114,7 @@ const refreshAccessToken = async (req, res) => {
       { expiresIn: '15m' }
     );
 
-    res.cookie('accessToken', newAccessToken, {
-      httpOnly: true,
-      sameSite: 'strict',
-      secure: false,
-      maxAge: 15 * 60 * 1000
-    });
+    res.cookie('accessToken', newAccessToken, cookieOptions(15 * 60 * 1000));
 
     res.json({ accessToken: newAccessToken });
 
@@ -145,8 +132,8 @@ const logout = async (req, res) => {
       await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
     }
 
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    res.clearCookie('accessToken',  { ...cookieOptions(0) });
+    res.clearCookie('refreshToken', { ...cookieOptions(0) });
 
     res.json({ message: 'Logged out successfully' });
 
