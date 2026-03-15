@@ -379,7 +379,11 @@ const ApplicationDetail = () => {
       };
       await applicationApi.updateApplication(id, payload);
       setApp(prev => ({ ...prev, status: newStatus }));
-      setTimeline(prev => [{ status: newStatus, date: new Date().toISOString() }, ...prev]);
+      // Reload timeline from backend to get accurate entries
+      try {
+        const tlRes = await applicationApi.getApplicationTimeline(id);
+        setTimeline(extractList(tlRes, ['timeline', 'data', 'items']));
+      } catch {}
       showToast(`Status updated to ${getCfg(newStatus).label}`);
     } catch (e) {
       console.error('Status update error:', e?.response?.data || e);
@@ -881,6 +885,7 @@ const ApplicationDetail = () => {
               {displayTl.slice(0, 6).map((entry, i) => {
                 const ec    = getCfg(entry.status || entry.type);
                 const first = i === 0;
+                const label = entry.event || ec.label;
                 return (
                   <div key={i} style={{ display: 'flex', gap: 12, position: 'relative' }}>
                     {i < Math.min(displayTl.length, 6) - 1 && (
@@ -890,7 +895,7 @@ const ApplicationDetail = () => {
                       <div style={{ width: 13, height: 13, borderRadius: '50%', background: first ? ec.color : 'var(--bg-raised)', border: `2px solid ${first ? ec.color : 'var(--border)'}` }} />
                     </div>
                     <div style={{ paddingBottom: 14, flex: 1 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: first ? 'var(--t1)' : 'var(--t2)' }}>{ec.label}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, color: first ? 'var(--t1)' : 'var(--t2)' }}>{label}</div>
                       {(entry.date || entry.createdAt) && (
                         <div style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'var(--mono)', marginTop: 2 }}>{fmtDate(entry.date || entry.createdAt)}</div>
                       )}

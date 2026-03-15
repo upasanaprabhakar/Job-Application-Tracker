@@ -437,30 +437,42 @@ const getApplicationTimeline = async (req, res) => {
         if (!application)               return res.status(404).json({ error: 'Application not found' });
         if (application.userId !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-        const timeline = [
-            { event: 'Application Created',   date: application.createdAt,       status: 'applied' },
-        ];
+        const timeline = [];
 
-        if (application.applicationDate.getTime() !== application.createdAt.getTime()) {
-            timeline.push({ event: 'Application Submitted', date: application.applicationDate, status: 'applied' });
-        }
+        // 1. Application submitted — use applicationDate as the canonical start
+        timeline.push({
+            event:  'Application Submitted',
+            date:   application.applicationDate || application.createdAt,
+            status: 'applied',
+        });
 
+        // 2. Status progression — only add if status has moved beyond 'applied'
         const statusEvents = {
-            screening:    { event: 'Moved to Screening',   status: 'screening' },
-            interviewing: { event: 'Moved to Interviewing', status: 'interviewing' },
-            offer:        { event: 'Offer Received',        status: 'offer' },
-            accepted:     { event: 'Offer Accepted',        status: 'accepted' },
-            rejected:     { event: 'Application Rejected',  status: 'rejected' },
-            withdrawn:    { event: 'Application Withdrawn', status: 'withdrawn' },
+            screening:    { event: 'Moved to Screening',    status: 'screening'    },
+            interviewing: { event: 'Interview Stage',        status: 'interviewing' },
+            offer:        { event: 'Offer Received',         status: 'offer'        },
+            accepted:     { event: 'Offer Accepted',         status: 'accepted'     },
+            rejected:     { event: 'Application Rejected',   status: 'rejected'     },
+            withdrawn:    { event: 'Application Withdrawn',  status: 'withdrawn'    },
         };
 
         const ev = statusEvents[application.status];
-        if (ev) timeline.push({ ...ev, date: application.updatedAt });
-
-        if (application.followUpDate) {
-            timeline.push({ event: 'Follow-up Scheduled', date: application.followUpDate, status: 'pending' });
+        // Only add status event if updatedAt is genuinely different from applicationDate
+        if (ev) {
+            const appDay     = new Date(application.applicationDate || application.createdAt).toDateString();
+            const updatedDay = new Date(application.updatedAt).toDateString();
+            timeline.push({
+                ...ev,
+                date: appDay !== updatedDay ? application.updatedAt : application.applicationDate,
+            });
         }
 
+        // 3. Follow-up scheduled
+        if (application.followUpDate) {
+            timeline.push({ event: 'Follow-up Scheduled', date: application.followUpDate, status: 'followup' });
+        }
+
+        // Sort chronologically and dedupe by same date+status
         timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         res.json({
