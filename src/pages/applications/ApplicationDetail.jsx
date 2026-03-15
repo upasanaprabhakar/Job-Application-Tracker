@@ -157,7 +157,18 @@ const StatusDropdown = ({ current, onChange }) => {
 
   const handleOpen = () => {
     if (triggerRef.current) {
-      setRect(triggerRef.current.getBoundingClientRect());
+      const r = triggerRef.current.getBoundingClientRect();
+      const zoom = window.devicePixelRatio / (window.outerWidth / window.innerWidth) || 1;
+      // account for CSS zoom on html element
+      const htmlZoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+      setRect({
+        top:    r.top    / htmlZoom,
+        bottom: r.bottom / htmlZoom,
+        left:   r.left   / htmlZoom,
+        right:  r.right  / htmlZoom,
+        width:  r.width  / htmlZoom,
+        height: r.height / htmlZoom,
+      });
     }
     setOpen(v => !v);
   };
@@ -182,13 +193,18 @@ const StatusDropdown = ({ current, onChange }) => {
     return () => window.removeEventListener('scroll', h, true);
   }, [open]);
 
+  const menuHeight = Object.keys(STATUS_CONFIG).length * 42;
+  const spaceBelow = rect ? window.innerHeight - rect.bottom : 0;
+  const openUpward = rect && spaceBelow < menuHeight + 10;
+
   const menu = open && rect ? createPortal(
     <div
       style={{
         position: 'fixed',
-        top:      rect.bottom + 6,
+        top:      openUpward ? rect.top - menuHeight - 6 : rect.bottom + 6,
         left:     rect.left,
         width:    rect.width,
+        maxWidth: '100vw',
         zIndex:   99999,
         background: '#1e1f2c',
         border: '1px solid rgba(255,255,255,0.12)',
