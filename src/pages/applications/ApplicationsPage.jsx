@@ -17,7 +17,9 @@ const STATUS_FILTERS = [
   { key: 'screening',    label: 'Screening' },
   { key: 'interviewing', label: 'Interviewing' },
   { key: 'offer',        label: 'Offer' },
+  { key: 'accepted',     label: 'Accepted' },
   { key: 'rejected',     label: 'Rejected' },
+  { key: 'withdrawn',    label: 'Withdrawn' },
 ];
 
 const BULK_STATUSES = [
@@ -104,30 +106,56 @@ const DeleteModal = ({ count, label, onConfirm, onCancel }) => (
 );
 
 /* ─── ActionMenu ──────────────────────────────────────── */
-const ActionMenu = ({ app, onEdit, onDelete, onClone, onClose }) => (
-  <div className="ap" onClick={e => e.stopPropagation()}
-    style={{ position:'absolute', right:0, top:'calc(100% + 4px)', width:168, background:'#1e1f2c', border:'1px solid rgba(255,255,255,0.1)', borderRadius:11, boxShadow:'0 16px 50px rgba(0,0,0,0.55)', zIndex:40, overflow:'hidden' }}>
-    {[
-      { icon:Edit2, label:'Edit', action:onEdit },
-      { icon:Copy,  label:'Clone', action:onClone },
-      ...(app.jobUrl ? [{ icon:ExternalLink, label:'Open Posting', action:() => { window.open(app.jobUrl,'_blank'); onClose(); } }] : []),
-    ].map(({ icon:Icon, label:l, action }) => (
-      <button key={l} onClick={() => { action(); onClose(); }}
-        style={{ width:'100%', display:'flex', alignItems:'center', gap:9, padding:'9px 14px', border:'none', background:'transparent', color:'var(--t2)', fontSize:13, cursor:'pointer', transition:'color 0.15s, background 0.15s', textAlign:'left' }}
-        onMouseEnter={e => { e.currentTarget.style.color='var(--t1)'; e.currentTarget.style.background='rgba(255,255,255,0.05)'; }}
-        onMouseLeave={e => { e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.background='transparent'; }}>
-        <Icon size={13}/>{l}
-      </button>
-    ))}
-    <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}/>
-    <button onClick={() => { onDelete(); onClose(); }}
-      style={{ width:'100%', display:'flex', alignItems:'center', gap:9, padding:'9px 14px', border:'none', background:'transparent', color:'#f87171', fontSize:13, cursor:'pointer', transition:'background 0.15s', textAlign:'left' }}
-      onMouseEnter={e => e.currentTarget.style.background='rgba(248,113,113,0.08)'}
-      onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-      <Trash2 size={13}/>Delete
-    </button>
-  </div>
-);
+const ActionMenu = ({ app, onEdit, onDelete, onClone, onClose, triggerRect }) => {
+  if (!triggerRect) return null;
+
+  const menuWidth  = 168;
+  const menuHeight = 160;
+  const htmlZoom   = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+  const spaceBelow = (window.innerHeight / htmlZoom) - (triggerRect.bottom / htmlZoom);
+  const top        = spaceBelow < menuHeight
+    ? (triggerRect.top    / htmlZoom) - menuHeight - 4
+    : (triggerRect.bottom / htmlZoom) + 4;
+  const left = Math.min(
+    (triggerRect.right / htmlZoom) - menuWidth,
+    (window.innerWidth / htmlZoom) - menuWidth - 8
+  );
+
+  return createPortal(
+    <>
+      {/* invisible backdrop to catch outside clicks */}
+      <div
+        style={{ position:'fixed', inset:0, zIndex:99998 }}
+        onMouseDown={onClose}
+      />
+      <div className="ap"
+        style={{ position:'fixed', top, left, width:menuWidth, background:'#1e1f2c', border:'1px solid rgba(255,255,255,0.1)', borderRadius:11, boxShadow:'0 16px 50px rgba(0,0,0,0.55)', zIndex:99999, overflow:'hidden' }}
+        onMouseDown={e => e.stopPropagation()}
+      >
+        {[
+          { icon:Edit2, label:'Edit', action:onEdit },
+          { icon:Copy,  label:'Clone', action:onClone },
+          ...(app.jobUrl ? [{ icon:ExternalLink, label:'Open Posting', action:() => { window.open(app.jobUrl,'_blank'); onClose(); } }] : []),
+        ].map(({ icon:Icon, label:l, action }) => (
+          <button key={l} onClick={() => { action(); onClose(); }}
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:9, padding:'9px 14px', border:'none', background:'transparent', color:'var(--t2)', fontSize:13, cursor:'pointer', transition:'color 0.15s, background 0.15s', textAlign:'left' }}
+            onMouseEnter={e => { e.currentTarget.style.color='var(--t1)'; e.currentTarget.style.background='rgba(255,255,255,0.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.background='transparent'; }}>
+            <Icon size={13}/>{l}
+          </button>
+        ))}
+        <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}/>
+        <button onClick={() => { onDelete(); onClose(); }}
+          style={{ width:'100%', display:'flex', alignItems:'center', gap:9, padding:'9px 14px', border:'none', background:'transparent', color:'#f87171', fontSize:13, cursor:'pointer', transition:'background 0.15s', textAlign:'left' }}
+          onMouseEnter={e => e.currentTarget.style.background='rgba(248,113,113,0.08)'}
+          onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+          <Trash2 size={13}/>Delete
+        </button>
+      </div>
+    </>,
+    document.body
+  );
+};
 
 /* ─── BulkStatusDropdown ──────────────────────────────── */
 const BulkStatusDropdown = ({ onSelect }) => {
@@ -203,6 +231,7 @@ const ApplicationsPage = () => {
   const [page,         setPage]         = useState(1);
   const [totalPages,   setTotalPages]   = useState(1);
   const [menuOpen,     setMenuOpen]     = useState(null);
+  const [menuRect,     setMenuRect]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // { ids: [], label: '' }
   const [stats,        setStats]        = useState({ total:0, thisWeek:0, responseRate:0, interviews:0 });
 
@@ -272,7 +301,7 @@ const ApplicationsPage = () => {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { const t = setTimeout(() => setPage(1), 350); return () => clearTimeout(t); }, [search]);
-  useEffect(() => { const h = () => setMenuOpen(null); document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
+  // menu closes via backdrop click in ActionMenu portal
 
   /* ── single delete ── */
   const handleDelete = async () => {
@@ -378,10 +407,10 @@ const ApplicationsPage = () => {
         </div>
 
         {/* ── TOOLBAR ── */}
-        <div className="card au d2" style={{ padding:'12px 14px', marginBottom:16 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-            {/* search */}
-            <div style={{ position:'relative', flex:1, minWidth:200 }}>
+        <div className="card au d2" style={{ padding:'10px 14px', marginBottom:16 }}>
+          {/* row 1: search + view toggle + add */}
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+            <div style={{ position:'relative', flex:1, minWidth:0 }}>
               <Search size={13} style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--t3)', pointerEvents:'none' }}/>
               <input className="inp" style={{ paddingLeft:34, paddingRight:search ? 32 : 12 }}
                 placeholder="Search by company or role…" value={search} onChange={e => setSearch(e.target.value)}/>
@@ -391,42 +420,35 @@ const ApplicationsPage = () => {
                 </button>
               )}
             </div>
-
-            <div style={{ width:1, height:28, background:'var(--border)', flexShrink:0 }}/>
-
-            {/* status filter */}
-            <div style={{ display:'flex', alignItems:'center', gap:3 }}>
-              {STATUS_FILTERS.map(({ key, label:lbl }) => (
-                <button key={key} onClick={() => { setFilter(key); setPage(1); }}
-                  style={{
-                    padding:'5px 11px', borderRadius:7, border:'1px solid transparent',
-                    cursor:'pointer', fontSize:12.5, fontWeight: filter===key ? 600 : 500,
-                    color: filter===key ? 'var(--accent)' : 'var(--t2)',
-                    background: filter===key ? 'rgba(0,200,150,0.08)' : 'transparent',
-                    borderColor: filter===key ? 'rgba(0,200,150,0.2)' : 'transparent',
-                    transition:'all 0.15s',
-                  }}
-                  onMouseEnter={e => { if (filter!==key) { e.currentTarget.style.color='var(--t1)'; e.currentTarget.style.background='rgba(255,255,255,0.04)'; } }}
-                  onMouseLeave={e => { if (filter!==key) { e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.background='transparent'; } }}
-                >{lbl}</button>
-              ))}
-            </div>
-
-            <div style={{ width:1, height:28, background:'var(--border)', flexShrink:0 }}/>
-
             {/* view toggle */}
-            <div style={{ display:'flex', gap:3, background:'rgba(255,255,255,0.04)', padding:'3px', borderRadius:9, border:'1px solid var(--border)' }}>
+            <div style={{ display:'flex', gap:3, background:'rgba(255,255,255,0.04)', padding:'3px', borderRadius:9, border:'1px solid var(--border)', flexShrink:0 }}>
               {[{ icon:List, v:'list' }, { icon:Grid3x3, v:'grid' }].map(({ icon:Icon, v }) => (
                 <button key={v} onClick={() => setView(v)} style={{ width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', border:'none', cursor:'pointer', borderRadius:7, background: view===v ? 'var(--card-hover)' : 'transparent', color: view===v ? 'var(--t1)' : 'var(--t3)', transition:'all 0.15s' }}>
                   <Icon size={14}/>
                 </button>
               ))}
             </div>
-
-            {/* add button */}
-            <button onClick={() => navigate('/applications/new')} style={{ ...ghostBtn, padding:'8px 16px', whiteSpace:'nowrap', fontSize:13 }} onMouseEnter={ghostHover} onMouseLeave={ghostUnhover}>
+            <button onClick={() => navigate('/applications/new')} className="btn-p" style={{ padding:'7px 16px', whiteSpace:'nowrap', fontSize:12.5, flexShrink:0 }}>
               <Plus size={13}/> Add
             </button>
+          </div>
+          {/* row 2: status filters — scrollable */}
+          <div style={{ display:'flex', alignItems:'center', gap:3, overflowX:'auto', paddingBottom:2 }}
+            className="hide-scrollbar">
+            {STATUS_FILTERS.map(({ key, label:lbl }) => (
+              <button key={key} onClick={() => { setFilter(key); setPage(1); }}
+                style={{
+                  padding:'4px 11px', borderRadius:7, border:'1px solid transparent',
+                  cursor:'pointer', fontSize:12, fontWeight: filter===key ? 600 : 500,
+                  color: filter===key ? 'var(--accent)' : 'var(--t2)',
+                  background: filter===key ? 'rgba(0,200,150,0.08)' : 'transparent',
+                  borderColor: filter===key ? 'rgba(0,200,150,0.2)' : 'transparent',
+                  transition:'all 0.15s', whiteSpace:'nowrap', flexShrink:0,
+                }}
+                onMouseEnter={e => { if (filter!==key) { e.currentTarget.style.color='var(--t1)'; e.currentTarget.style.background='rgba(255,255,255,0.04)'; } }}
+                onMouseLeave={e => { if (filter!==key) { e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.background='transparent'; } }}
+              >{lbl}</button>
+            ))}
           </div>
         </div>
 
@@ -500,20 +522,35 @@ const ApplicationsPage = () => {
           </div>
 
         ) : apps.length === 0 ? (
-          <div className="card" style={{ padding:'60px 20px', textAlign:'center' }}>
-            <div style={{ width:48, height:48, borderRadius:12, background:'rgba(255,255,255,0.04)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
-              {search || filter !== 'all' ? <SlidersHorizontal size={20} style={{ color:'var(--t3)' }}/> : <Briefcase size={20} style={{ color:'var(--t3)' }}/>}
-            </div>
-            <div style={{ fontSize:15, fontWeight:600, color:'var(--t1)', marginBottom:6 }}>
-              {search || filter !== 'all' ? 'No results found' : 'No applications yet'}
-            </div>
-            <div style={{ fontSize:13, color:'var(--t2)', marginBottom:18 }}>
-              {search || filter !== 'all' ? 'Try adjusting your filters or search query.' : 'Start tracking your job applications to see them here.'}
-            </div>
-            {!search && filter === 'all' && (
-              <button onClick={() => navigate('/applications/new')} style={{ ...ghostBtn, padding:'8px 20px', fontSize:13 }} onMouseEnter={ghostHover} onMouseLeave={ghostUnhover}>
-                <Plus size={14}/> Add Application
-              </button>
+          <div className="card" style={{ padding:'64px 24px', textAlign:'center' }}>
+            {search || filter !== 'all' ? (
+              <>
+                <div style={{ width:56, height:56, borderRadius:16, background:'rgba(232,168,32,0.07)', border:'1px solid rgba(232,168,32,0.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+                  <SlidersHorizontal size={22} style={{ color:'#e8a820' }}/>
+                </div>
+                <div style={{ fontSize:16, fontWeight:700, color:'var(--t1)', marginBottom:8 }}>No results found</div>
+                <div style={{ fontSize:13, color:'var(--t2)', marginBottom:20, maxWidth:320, margin:'0 auto 20px' }}>
+                  No applications match <strong style={{ color:'var(--t1)' }}>"{search || filter}"</strong>. Try a different search or clear your filters.
+                </div>
+                <button onClick={() => { setSearch(''); setFilter('all'); }}
+                  style={{ ...ghostBtn, padding:'8px 20px', fontSize:13 }} onMouseEnter={ghostHover} onMouseLeave={ghostUnhover}>
+                  Clear filters
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ width:64, height:64, borderRadius:18, background:'rgba(0,200,150,0.07)', border:'1px solid rgba(0,200,150,0.15)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 18px' }}>
+                  <Briefcase size={26} style={{ color:'var(--accent)' }}/>
+                </div>
+                <div style={{ fontSize:17, fontWeight:700, color:'var(--t1)', marginBottom:8 }}>No applications yet</div>
+                <div style={{ fontSize:13, color:'var(--t2)', marginBottom:22, maxWidth:300, margin:'0 auto 22px', lineHeight:1.6 }}>
+                  Start tracking your job search. Add your first application to see it here.
+                </div>
+                <button onClick={() => navigate('/applications/new')} className="btn-p"
+                  style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'9px 22px', fontSize:13 }}>
+                  <Plus size={14}/> Track First Job
+                </button>
+              </>
             )}
           </div>
 
@@ -569,9 +606,9 @@ const ApplicationsPage = () => {
                   <div style={{ fontSize:12, color:'var(--t3)', fontFamily:'var(--mono)' }}>{fmtDate(app.date)}</div>
 
                   {/* menu */}
-                  <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
+                  <div onClick={e => e.stopPropagation()}>
                     <button
-                      onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === app.id ? null : app.id); }}
+                      onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === app.id ? null : app.id); setMenuRect(e.currentTarget.getBoundingClientRect()); }}
                       style={{ width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:7, border:'1px solid transparent', background:'transparent', cursor:'pointer', color:'var(--t3)', transition:'all 0.15s' }}
                       onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--t1)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='transparent'; e.currentTarget.style.color='var(--t3)'; }}
@@ -581,6 +618,7 @@ const ApplicationsPage = () => {
                     {menuOpen === app.id && (
                       <ActionMenu
                         app={app}
+                        triggerRect={menuRect}
                         onEdit={() => { setMenuOpen(null); navigate(`/applications/${app.id}/edit`); }}
                         onDelete={() => { setMenuOpen(null); setDeleteTarget({ ids:[app.id], label:`${app.position} at ${app.company}` }); }}
                         onClone={() => { setMenuOpen(null); handleClone(app.id); }}

@@ -41,12 +41,31 @@ body {
 }
 
 ::-webkit-scrollbar { width: 4px; }
+
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.13); }
 
 input, textarea, select, button { font-family: var(--font); }
-input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.4); cursor: pointer; }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5) sepia(1) saturate(3) hue-rotate(115deg);
+  cursor: pointer;
+  opacity: 0.7;
+  border-radius: 4px;
+  padding: 2px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+input[type="date"]::-webkit-datetime-edit { color: var(--t1); }
+input[type="date"]::-webkit-datetime-edit-fields-wrapper { color: var(--t1); }
+input[type="date"]::-webkit-datetime-edit-text { color: var(--t3); }
+input[type="date"]::-webkit-datetime-edit-month-field { color: var(--t1); }
+input[type="date"]::-webkit-datetime-edit-day-field   { color: var(--t1); }
+input[type="date"]::-webkit-datetime-edit-year-field  { color: var(--t1); }
+input[type="date"]::-webkit-inner-spin-button { display: none; }
 
 /* ── animations ── */
 @keyframes slideUp {

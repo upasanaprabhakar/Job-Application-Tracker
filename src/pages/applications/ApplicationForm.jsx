@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, X, AlertTriangle, ExternalLink } from 'lucide-react';
+import DatePicker from '../../components/common/DatePicker';
 import { applicationApi } from '../../api/applicationApi';
 import MainLayout from '../../components/layout/MainLayout';
 
@@ -276,10 +277,20 @@ const ApplicationForm = () => {
             </Field>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <Field label="Date Applied" required error={errors.applicationDate}>
-                <input type="date" className={`inp${errors.applicationDate ? ' err' : ''}`} value={form.applicationDate} onChange={e => set('applicationDate', e.target.value)} />
+                <DatePicker
+                  value={form.applicationDate}
+                  onChange={v => set('applicationDate', v)}
+                  placeholder="Select date applied"
+                  hasError={!!errors.applicationDate}
+                  clearable={false}
+                />
               </Field>
               <Field label="Follow-up Date">
-                <input type="date" className="inp" value={form.followUpDate} onChange={e => set('followUpDate', e.target.value)} />
+                <DatePicker
+                  value={form.followUpDate}
+                  onChange={v => set('followUpDate', v)}
+                  placeholder="Set a follow-up reminder"
+                />
               </Field>
             </div>
           </Section>
