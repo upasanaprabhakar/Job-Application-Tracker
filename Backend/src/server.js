@@ -2,6 +2,7 @@ const express        = require('express');
 const cors           = require('cors');
 const cookieParser   = require('cookie-parser');
 const http           = require('http');
+const rateLimit      = require('express-rate-limit');
 require('dotenv').config();
 
 const { initSocket } = require('./socket');
@@ -23,12 +24,45 @@ const server = http.createServer(app);
 
 initSocket(server);
 
+// ── Rate limiters ──
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max:      200,              // generous — 200 requests per IP
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Too many requests, please try again later' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max:      20,               // 20 login/register attempts per IP
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { error: 'Too many auth attempts, try again in 15 minutes' },
+});
+
+const allowedOrigins = [
+  'https://job-application-tracker-git-main-upasanas-projects-8bc6be68.vercel.app',
+  'https://job-application-tracker-crlene6f6-upasanas-projects-8bc6be68.vercel.app',
+  'https://job-application-tracker-theta-khaki.vercel.app',
+  'http://localhost:5173',
+];
+
 app.use(cors({
-  origin:      process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(cookieParser());
+
+// Apply rate limiting
+app.use('/api/',      generalLimiter);
+app.use('/api/auth/', authLimiter);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Job Tracker API Running' });
