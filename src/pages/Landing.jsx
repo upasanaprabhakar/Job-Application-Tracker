@@ -88,6 +88,8 @@ const DottedSurface = () => {
   return <div ref={containerRef} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }} />;
 };
 
+import logoDark from '../assets/logo-dark.png';
+
 /* ── small SVG helpers ── */
 const Logo = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -187,10 +189,7 @@ export default function Landing() {
       {/* ─── NAV ─── */}
       <nav style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 48px', height:60, background:'rgba(8,8,9,0.88)', backdropFilter:'blur(20px)', borderBottom:'1px solid rgba(255,255,255,.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:30, height:30, borderRadius:8, background:'#00c896', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 14px rgba(0,200,150,.4)', flexShrink:0 }}>
-            <Logo />
-          </div>
-          <span style={{ fontSize:15, fontWeight:600, letterSpacing:'-0.3px' }}>CareerTrack</span>
+          <img src={logoDark} alt="CareerTrack" style={{ height:32, width:'auto', maxWidth:180, objectFit:'contain' }} />
         </div>
         <div style={{ display:'flex', gap:2 }}>
           <a href="#features" className="nav-a">Features</a>
@@ -368,8 +367,7 @@ export default function Landing() {
       {/* ─── FOOTER ─── */}
       <footer style={{ position:'relative', zIndex:10, background:'rgba(8,8,9,0.95)', borderTop:'1px solid rgba(255,255,255,.06)', padding:'26px 48px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-          <div style={{ width:24, height:24, borderRadius:6, background:'#00c896', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 10px rgba(0,200,150,.3)' }}><Logo /></div>
-          <span style={{ fontSize:13.5, fontWeight:600 }}>CareerTrack</span>
+          <img src={logoDark} alt="CareerTrack" style={{ height:26, width:'auto', maxWidth:160, objectFit:'contain' }} />
         </div>
         <span style={{ fontSize:12, color:'#2e2e3a' }}>Built to help you land the job.</span>
         <div style={{ display:'flex', gap:20 }}>
