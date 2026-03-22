@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, X, Calendar, Clock,
   FileText, Zap, ArrowRight, TrendingUp, Target,
-  Lightbulb, Activity,
+  Lightbulb, Activity, CheckCircle2,
 } from 'lucide-react';
 import { applicationApi } from '../../api/applicationApi';
 import MainLayout from '../../components/layout/MainLayout';
@@ -15,10 +15,16 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const EVENT_TYPES = {
-  application: { label:'Applied',   color:'#5aabf0', bg:'rgba(90,171,240,0.12)',  border:'rgba(90,171,240,0.25)',  icon: FileText },
-  followup:    { label:'Follow-up', color:'#00c896', bg:'rgba(0,200,150,0.12)',   border:'rgba(0,200,150,0.25)',   icon: Clock    },
-  interview:   { label:'Interview', color:'#f87171', bg:'rgba(248,113,113,0.12)', border:'rgba(248,113,113,0.25)', icon: Zap      },
+  application: { label:'Applied',     color:'#e8a820', bg:'rgba(232,168,32,0.12)',  border:'rgba(232,168,32,0.25)',  icon: FileText },
+  followup:    { label:'Follow-up',   color:'#00c896', bg:'rgba(0,200,150,0.12)',   border:'rgba(0,200,150,0.25)',   icon: Clock    },
+  interview:   { label:'Interview',   color:'#f87171', bg:'rgba(248,113,113,0.12)', border:'rgba(248,113,113,0.25)', icon: Zap      },
+  offer:       { label:'Offer',       color:'#c084fc', bg:'rgba(192,132,252,0.12)', border:'rgba(192,132,252,0.25)', icon: Zap      },
+  accepted:    { label:'Accepted',    color:'#00c896', bg:'rgba(0,200,150,0.12)',   border:'rgba(0,200,150,0.25)',   icon: CheckCircle2 },
+  rejected:    { label:'Rejected',    color:'#5a5a72', bg:'rgba(90,90,114,0.12)',   border:'rgba(90,90,114,0.25)',   icon: X        },
 };
+
+// Safe accessor — falls back to application type if unknown
+const getEventType = (type) => EVENT_TYPES[type] || EVENT_TYPES.application;
 
 /* ─── helpers ─────────────────────────────────────────── */
 const badgeClass  = (s) => ({ applied:'b-applied', screening:'b-screening', interviewing:'b-interviewing', offer:'b-offer', accepted:'b-accepted', rejected:'b-rejected', withdrawn:'b-withdrawn' })[s?.toLowerCase()] || 'b-withdrawn';
@@ -58,16 +64,20 @@ const buildEvents = (apps) => {
     add(a.applicationDate, 'application', a);
 
     // 2. Status change activity — recorded on updatedAt.
-    //    Shows WHAT the status changed TO using colour coding.
-    //    Guard: only if updatedAt is a different calendar day than applicationDate.
+    //    Only show if updatedAt is genuinely different from BOTH applicationDate AND createdAt.
+    //    This prevents bulk-added demo data from flooding today with fake events.
     if (PROGRESS_STATUSES.includes(a.status) && a.updatedAt) {
       const appKey     = toKey(toDate(a.applicationDate) || new Date(0));
+      const createdKey = toKey(toDate(a.createdAt)       || new Date(0));
       const updatedKey = toKey(toDate(a.updatedAt));
-      if (updatedKey !== appKey) {
+      const genuineChange = updatedKey !== appKey && updatedKey !== createdKey;
+      if (genuineChange) {
         const evType =
-          ['interviewing','offer','accepted'].includes(a.status) ? 'interview' :
-          a.status === 'rejected'                                ? 'rejected'  :
-                                                                   'followup';
+          a.status === 'interviewing' ? 'interview' :
+          a.status === 'offer'        ? 'offer'     :
+          a.status === 'accepted'     ? 'accepted'  :
+          a.status === 'rejected'     ? 'rejected'  :
+                                        'followup';
         add(a.updatedAt, evType, a);
       }
     }
@@ -116,9 +126,9 @@ const DayModal = ({ date, events, onClose, navigate }) => {
               <span style={{ fontSize:28, fontWeight:800, color:'var(--t1)', fontFamily:'var(--mono)', letterSpacing:'-1px' }}>{date.getDate()}</span>
               <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
                 {Object.entries(events.reduce((a, e) => { a[e.type]=(a[e.type]||0)+1; return a; }, {})).map(([type, count]) => (
-                  <div key={type} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 7px', background:EVENT_TYPES[type].bg, border:`1px solid ${EVENT_TYPES[type].border}`, borderRadius:99 }}>
-                    <span style={{ width:5, height:5, borderRadius:'50%', background:EVENT_TYPES[type].color }}/>
-                    <span style={{ fontSize:10, fontWeight:700, color:EVENT_TYPES[type].color }}>{count} {EVENT_TYPES[type].label}{count>1?'s':''}</span>
+                  <div key={type} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 7px', background:getEventType(type).bg, border:`1px solid ${getEventType(type).border}`, borderRadius:99 }}>
+                    <span style={{ width:5, height:5, borderRadius:'50%', background:getEventType(type).color }}/>
+                    <span style={{ fontSize:10, fontWeight:700, color:getEventType(type).color }}>{count} {getEventType(type).label}{count>1?'s':''}</span>
                   </div>
                 ))}
               </div>
@@ -134,7 +144,7 @@ const DayModal = ({ date, events, onClose, navigate }) => {
         {/* events */}
         <div style={{ maxHeight:400, overflowY:'auto' }}>
           {events.map((ev, i) => {
-            const c = EVENT_TYPES[ev.type];
+            const c = getEventType(ev.type);
             const Icon = c.icon;
             return (
               <div key={i} style={{ padding:'14px 20px', borderBottom: i < events.length-1 ? '1px solid var(--border)' : 'none', display:'flex', alignItems:'center', gap:12 }}>
@@ -678,7 +688,7 @@ const CalendarPage = () => {
                       {hasEvents && (
                         <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
                           {Object.entries(typeCounts).slice(0,3).map(([type, count]) => {
-                            const cfg = EVENT_TYPES[type];
+                            const cfg = getEventType(type);
                             return (
                               <div key={type} style={{ display:'flex', alignItems:'center', gap:3, padding:'1.5px 5px', borderRadius:4, background:cfg.bg, border:`1px solid ${cfg.border}` }}>
                                 <span style={{ width:4, height:4, borderRadius:'50%', background:cfg.color, flexShrink:0 }}/>
@@ -752,7 +762,7 @@ const CalendarPage = () => {
                         {isTd && <span style={{ width:4, height:4, borderRadius:'50%', background:'var(--accent)' }}/>}
                       </div>
                       {events.map((ev, ei) => {
-                        const c = EVENT_TYPES[ev.type];
+                        const c = getEventType(ev.type);
                         const Icon = c.icon;
                         return (
                           <div key={ei} onClick={() => navigate(`/applications/${ev.app.id}`)}

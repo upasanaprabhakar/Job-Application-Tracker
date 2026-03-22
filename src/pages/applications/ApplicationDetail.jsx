@@ -884,18 +884,19 @@ const ApplicationDetail = () => {
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Activity Timeline</div>
               {displayTl.slice(0, 6).map((entry, i) => {
                 const ec    = getCfg(entry.status || entry.type);
-                const first = i === 0;
+                const total = Math.min(displayTl.length, 6);
+                const last  = i === total - 1;
                 const label = entry.event || ec.label;
                 return (
                   <div key={i} style={{ display: 'flex', gap: 12, position: 'relative' }}>
-                    {i < Math.min(displayTl.length, 6) - 1 && (
+                    {i < total - 1 && (
                       <div style={{ position: 'absolute', left: 6, top: 18, bottom: 0, width: 1, background: 'var(--border)' }} />
                     )}
                     <div style={{ position: 'relative', zIndex: 1, flexShrink: 0, paddingTop: 3 }}>
-                      <div style={{ width: 13, height: 13, borderRadius: '50%', background: first ? ec.color : 'var(--bg-raised)', border: `2px solid ${first ? ec.color : 'var(--border)'}` }} />
+                      <div style={{ width: 13, height: 13, borderRadius: '50%', background: last ? ec.color : 'var(--bg-raised)', border: `2px solid ${last ? ec.color : 'var(--border)'}` }} />
                     </div>
                     <div style={{ paddingBottom: 14, flex: 1 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: first ? 'var(--t1)' : 'var(--t2)' }}>{label}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, color: last ? 'var(--t1)' : 'var(--t2)' }}>{label}</div>
                       {(entry.date || entry.createdAt) && (
                         <div style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'var(--mono)', marginTop: 2 }}>{fmtDate(entry.date || entry.createdAt)}</div>
                       )}
