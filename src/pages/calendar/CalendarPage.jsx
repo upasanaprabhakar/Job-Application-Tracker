@@ -71,14 +71,21 @@ const buildEvents = (apps) => {
       const createdKey = toKey(toDate(a.createdAt)       || new Date(0));
       const updatedKey = toKey(toDate(a.updatedAt));
       const genuineChange = updatedKey !== appKey && updatedKey !== createdKey;
+
+      const evType =
+        a.status === 'interviewing' ? 'interview' :
+        a.status === 'offer'        ? 'offer'     :
+        a.status === 'accepted'     ? 'accepted'  :
+        a.status === 'rejected'     ? 'rejected'  :
+                                      'followup';
+
       if (genuineChange) {
-        const evType =
-          a.status === 'interviewing' ? 'interview' :
-          a.status === 'offer'        ? 'offer'     :
-          a.status === 'accepted'     ? 'accepted'  :
-          a.status === 'rejected'     ? 'rejected'  :
-                                        'followup';
+        // Genuine status change on a different day — record on updatedAt
         add(a.updatedAt, evType, a);
+      } else if (['rejected', 'accepted', 'offer'].includes(a.status)) {
+        // Terminal/notable status — always record on applicationDate so
+        // month breakdown counts are accurate even for bulk-added data
+        add(a.applicationDate, evType, a);
       }
     }
 
@@ -442,7 +449,7 @@ const CalendarPage = () => {
 
   /* ── month stats ── */
   const monthStats = useMemo(() => {
-    const stats = { total:0, application:0, followup:0, interview:0 };
+    const stats = { total:0, application:0, followup:0, interview:0, offer:0, accepted:0, rejected:0 };
     days.filter(d => d.current).forEach(({ date }) => {
       const evs = eventMap[toKey(date)] || [];
       stats.total += evs.length;
@@ -515,6 +522,9 @@ const CalendarPage = () => {
     { key:'application', label:'Applied'      },
     { key:'followup',    label:'Follow-ups'   },
     { key:'interview',   label:'Interviews'   },
+    { key:'offer',       label:'Offers'       },
+    { key:'accepted',    label:'Accepted'     },
+    { key:'rejected',    label:'Rejected'     },
   ];
 
   return (

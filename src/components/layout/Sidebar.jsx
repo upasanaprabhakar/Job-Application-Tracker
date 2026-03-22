@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import logo from '../../assets/logo.png';
 import { LayoutDashboard, Briefcase, BarChart3, FileText, Settings, LogOut, Calendar } from 'lucide-react';
 import { useMutation }   from '@tanstack/react-query';
 import { useNavigate }   from 'react-router-dom';
@@ -70,34 +71,45 @@ const Sidebar = ({ isOpen, onClose, collapsed }) => {
             justifyContent: collapsed ? 'center' : 'flex-start',
             overflow: 'hidden',
           }}>
-            <div style={{
-              width: 33, height: 33, flexShrink: 0,
-              background: 'var(--accent)',
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 18px rgba(0,200,150,0.4)',
-            }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1"  y="9"  width="3.5" height="6"  rx="1" fill="#051410" opacity="0.45"/>
-                <rect x="6"  y="5"  width="3.5" height="10" rx="1" fill="#051410" opacity="0.72"/>
-                <rect x="11" y="1"  width="3.5" height="14" rx="1" fill="#051410"/>
-              </svg>
-            </div>
+            {/* collapsed: show just the icon portion of the logo */}
+            {collapsed ? (
+              <div style={{
+                width: 33, height: 33, flexShrink: 0,
+                background: 'var(--accent)',
+                borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 0 18px rgba(0,200,150,0.4)',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="1"  y="9"  width="3.5" height="6"  rx="1" fill="#051410" opacity="0.45"/>
+                  <rect x="6"  y="5"  width="3.5" height="10" rx="1" fill="#051410" opacity="0.72"/>
+                  <rect x="11" y="1"  width="3.5" height="14" rx="1" fill="#051410"/>
+                </svg>
+              </div>
+            ) : (
+              <img
+                src={logo}
+                alt="CareerTrack"
+                style={{
+                  width: '100%',
+                  maxWidth: 168,
+                  height: 'auto',
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  transition: 'opacity 0.2s',
+                  filter: 'brightness(1.1)',
+                }}
+              />
+            )}
 
-            {/* text — fades out when collapsed */}
+            {/* spacer div to keep layout — text is now in the image */}
             <div style={{
               overflow: 'hidden',
-              opacity: collapsed ? 0 : 1,
-              width: collapsed ? 0 : 'auto',
+              opacity: collapsed ? 0 : 0,
+              width: 0,
               transition: 'opacity 0.2s, width 0.28s',
               whiteSpace: 'nowrap',
             }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--t1)', letterSpacing: '-0.3px', lineHeight: 1 }}>
-                CareerTrack
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 2, fontWeight: 500 }}>
-                Job Tracker
-              </div>
             </div>
           </div>
 

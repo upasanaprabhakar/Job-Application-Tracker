@@ -139,6 +139,8 @@ const Logo = () => (
   </svg>
 );
 
+import logoDark from '../../assets/logo-dark.png';
+
 const Login = () => {
   const navigate = useNavigate();
   const { setUser } = useAuthStore();
@@ -205,14 +207,7 @@ const Login = () => {
 
         {/* logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: '#00c896', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(0,200,150,0.4)', marginBottom: 14, animation: 'dotPulse 3s ease-in-out infinite' }}>
-            <svg width="24" height="24" viewBox="0 0 16 16" fill="none">
-              <rect x="1" y="9"  width="3.5" height="6"  rx="1" fill="#041410" opacity="0.5"/>
-              <rect x="6" y="5"  width="3.5" height="10" rx="1" fill="#041410" opacity="0.75"/>
-              <rect x="11" y="1" width="3.5" height="14" rx="1" fill="#041410"/>
-            </svg>
-          </div>
-          <span style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.4px', color: '#eeeef2' }}>CareerTrack</span>
+          <img src={logoDark} alt="CareerTrack" style={{ width: 220, height: 'auto', objectFit: 'contain', marginBottom: 8 }} />
         </div>
 
         {/* card */}
