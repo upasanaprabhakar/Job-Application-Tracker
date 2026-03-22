@@ -268,9 +268,6 @@ The app runs at `http://localhost:5173`
 
 **Upasana Prabhakar**
 
-GitHub: [upasanaprabhakar](https://github.com/upasanaprabhakar)
-LinkedIn: [upasana-prabhakar-634224296](https://linkedin.com/in/upasana-prabhakar-634224296)
-
 ## License
 
 MIT
