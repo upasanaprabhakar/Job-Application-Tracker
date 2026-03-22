@@ -6,8 +6,11 @@ A full-stack job application tracking system built for serious job seekers. Care
 
 ## Preview
 
+<img width="1904" height="892" alt="Screenshot 2026-03-22 210555" src="https://github.com/user-attachments/assets/a7fead69-3b99-4eb9-a6fe-a1dbeff84cc3" />
 
+<br><br>
 
+<img width="1917" height="903" alt="Screenshot 2026-03-22 202825" src="https://github.com/user-attachments/assets/ceddad51-df4a-4e5e-9f84-52f42d35e4c0" />
 
 
 ## What It Does
