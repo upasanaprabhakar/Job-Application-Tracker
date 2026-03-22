@@ -41,7 +41,7 @@ const PDFModal = ({ url, title, onClose }) => {
     setLoading(true);
     setErrMsg('');
 
-    const BASE     = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const BASE     = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
     const proxyUrl = `${BASE}/proxy/pdf?url=${encodeURIComponent(url)}`;
 
     fetch(proxyUrl)
@@ -449,28 +449,47 @@ const ResumesSection = () => {
             <div key={r.id} className="card au lift" style={{ padding:'14px 16px', animationDelay:`${i*40}ms`, borderColor: bulk.selected.has(r.id) ? `${color}50` : `${color}15`, background: bulk.selected.has(r.id) ? `${color}06` : '', transition:'all 0.15s' }}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
                 <SelectBox checked={bulk.selected.has(r.id)} onChange={() => bulk.toggle(r.id)} color={color}/>
-                <div style={{ width:38, height:38, borderRadius:10, background:`${color}15`, border:`1px solid ${color}25`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <FileText size={16} style={{ color }}/>
+                {/* clickable icon */}
+                <div onClick={() => setPdfView({ url:r.fileUrl, title:r.title })}
+                  style={{ width:42, height:42, borderRadius:11, background:`${color}10`, border:`1px solid ${color}20`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'pointer', transition:'all 0.18s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background=`${color}22`; e.currentTarget.style.borderColor=`${color}40`; }}
+                  onMouseLeave={e => { e.currentTarget.style.background=`${color}10`; e.currentTarget.style.borderColor=`${color}20`; }}
+                >
+                  <FileText size={17} style={{ color }}/>
                 </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13.5, fontWeight:700, color:'var(--t1)', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.title}</div>
-                  <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                    <span style={{ fontSize:11.5, color:'var(--t3)' }}>
-                      <Calendar size={10} style={{ marginRight:4, verticalAlign:'middle' }}/>
-                      {fmtDate(r.createdAt)}
+
+                {/* info — clickable */}
+                <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={() => setPdfView({ url:r.fileUrl, title:r.title })}>
+                  <div style={{ fontSize:13.5, fontWeight:700, color:'var(--t1)', marginBottom:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.title}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:11.5, color:'var(--t3)', display:'flex', alignItems:'center', gap:4 }}>
+                      <Calendar size={10}/>{fmtDate(r.createdAt)}
                     </span>
-                    {r.fileSize && <span style={{ fontSize:11.5, color:'var(--t3)' }}>{fmtSize(r.fileSize)}</span>}
+                    {r.fileSize && (
+                      <span style={{ fontSize:11.5, color:'var(--t3)', background:'rgba(255,255,255,0.04)', border:'1px solid var(--border)', padding:'1px 7px', borderRadius:99 }}>
+                        {fmtSize(r.fileSize)}
+                      </span>
+                    )}
                     {r._count?.applications > 0 && (
-                      <span style={{ fontSize:11, fontWeight:600, color, padding:'2px 8px', background:`${color}12`, borderRadius:99, border:`1px solid ${color}25` }}>
+                      <span style={{ fontSize:11, fontWeight:600, color, padding:'2px 8px', background:`${color}10`, borderRadius:99, border:`1px solid ${color}25` }}>
                         {r._count.applications} app{r._count.applications!==1?'s':''}
                       </span>
                     )}
                   </div>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0, flexWrap:'wrap', justifyContent:'flex-end' }}>
-                  <GhostBtn icon={ExternalLink} label="View"    color={color}     onClick={() => setPdfView({ url:r.fileUrl, title:r.title })}/>
-                  <GhostBtn icon={Sparkles}     label="Analyse" color="#c084fc"   onClick={() => setAiResume(r)}/>
-                  <GhostBtn icon={Trash2}       label="Delete"  danger            onClick={() => setDeleting(r)}/>
+
+                {/* actions — icon only, no label */}
+                <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+                  <button onClick={() => setAiResume(r)} title="AI Analyse"
+                    style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(192,132,252,0.2)', background:'rgba(192,132,252,0.07)', color:'#c084fc', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s' }}
+                    onMouseEnter={e=>{ e.currentTarget.style.background='rgba(192,132,252,0.15)'; e.currentTarget.style.borderColor='rgba(192,132,252,0.4)'; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.background='rgba(192,132,252,0.07)'; e.currentTarget.style.borderColor='rgba(192,132,252,0.2)'; }}
+                  ><Sparkles size={13}/></button>
+                  <button onClick={() => setDeleting(r)} title="Delete"
+                    style={{ width:32, height:32, borderRadius:8, border:'1px solid rgba(248,113,113,0.15)', background:'transparent', color:'var(--t3)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s' }}
+                    onMouseEnter={e=>{ e.currentTarget.style.background='rgba(248,113,113,0.08)'; e.currentTarget.style.borderColor='rgba(248,113,113,0.35)'; e.currentTarget.style.color='#f87171'; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='rgba(248,113,113,0.15)'; e.currentTarget.style.color='var(--t3)'; }}
+                  ><Trash2 size={13}/></button>
                 </div>
               </div>
             </div>
