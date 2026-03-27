@@ -30,6 +30,8 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
+    // Don't try to refresh on auth routes — avoids 'refresh token required' flash on login
+    if (original.url?.includes('/auth/login') || original.url?.includes('/auth/register')) return Promise.reject(err);
     if (err.response?.status !== 401 || original._retry) return Promise.reject(err);
 
     if (isRefreshing) {

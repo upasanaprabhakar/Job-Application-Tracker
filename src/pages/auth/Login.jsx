@@ -157,7 +157,13 @@ const Login = () => {
       navigate('/dashboard');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Login failed');
+      const status = error.response?.status;
+      const msg =
+        status === 401 ? 'Invalid email or password. Please try again.' :
+        status === 400 ? 'Please enter your email and password.' :
+        status === 429 ? 'Too many attempts. Please wait a moment.' :
+        'Something went wrong. Please try again.';
+      toast.error(msg);
     },
   });
 
