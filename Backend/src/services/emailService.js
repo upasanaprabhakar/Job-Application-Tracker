@@ -1,6 +1,6 @@
-const nodemailer       = require('nodemailer');
+const nodemailer = require('nodemailer');
 const { PrismaClient } = require('@prisma/client');
-const prisma           = new PrismaClient();
+const prisma = new PrismaClient();
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -8,11 +8,11 @@ const transporter = nodemailer.createTransport({
 });
 
 /* ── shared styles ── */
-const wrapStyle   = `max-width:520px;margin:40px auto;background:#1a1b25;border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden;`;
+const wrapStyle = `max-width:520px;margin:40px auto;background:#1a1b25;border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden;`;
 const headerStyle = `background:linear-gradient(135deg,#00c896 0%,#00a87a 100%);padding:28px 32px;`;
-const bodyStyle   = `padding:28px 32px;`;
-const labelStyle  = `font-size:12px;color:#7e7e96;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;`;
-const valueStyle  = `font-size:15px;color:#ededf1;font-weight:500;margin-bottom:16px;`;
+const bodyStyle = `padding:28px 32px;`;
+const labelStyle = `font-size:12px;color:#7e7e96;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;`;
+const valueStyle = `font-size:15px;color:#ededf1;font-weight:500;margin-bottom:16px;`;
 const footerStyle = `padding:18px 32px;border-top:1px solid rgba(255,255,255,0.07);font-size:12px;color:#3e3e54;text-align:center;`;
 const row = (l, v) => `<div style="${labelStyle}">${l}</div><div style="${valueStyle}">${v}</div>`;
 
@@ -20,7 +20,7 @@ const row = (l, v) => `<div style="${labelStyle}">${l}</div><div style="${valueS
 const canSend = async (userId, prefKey) => {
   try {
     const user = await prisma.user.findUnique({
-      where:  { id: userId },
+      where: { id: userId },
       select: {
         email: true,
         notifMasterEnabled: true,
@@ -34,10 +34,10 @@ const canSend = async (userId, prefKey) => {
     if (user.notifMasterEnabled === false) return { allowed: false };
     // map frontend key → prisma field
     const map = {
-      statusChanges:      'notifStatusChanges',
-      followUpReminders:  'notifFollowUpReminders',
+      statusChanges: 'notifStatusChanges',
+      followUpReminders: 'notifFollowUpReminders',
       interviewReminders: 'notifInterviewReminders',
-      weeklyDigest:       'notifWeeklyDigest',
+      weeklyDigest: 'notifWeeklyDigest',
     };
     const field = map[prefKey];
     if (field && user[field] === false) return { allowed: false };
@@ -56,8 +56,8 @@ const sendFollowUpReminder = async (userEmail, application, userId) => {
       userEmail = email || userEmail;
     }
     await transporter.sendMail({
-      from:    `"Job Tracker" <${process.env.EMAIL_USER}>`,
-      to:      userEmail,
+      from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
       subject: `⏰ Follow-up Reminder: ${application.companyName} – ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
@@ -70,7 +70,7 @@ const sendFollowUpReminder = async (userEmail, application, userId) => {
             ${row('Company', application.companyName)}
             ${row('Position', application.jobTitle)}
             ${row('Status', application.status)}
-            ${row('Applied', new Date(application.applicationDate).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}))}
+            ${row('Applied', new Date(application.applicationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}
           </div>
           <div style="${footerStyle}">You're receiving this because follow-up reminders are enabled in your Job Tracker settings.</div>
         </div></div>`,
@@ -80,19 +80,22 @@ const sendFollowUpReminder = async (userEmail, application, userId) => {
 };
 
 /* ── Status Change Notification ── */
-const STATUS_COLORS = { applied:'#e8a820', screening:'#5aabf0', interviewing:'#00c896', offer:'#c084fc', accepted:'#34d399', rejected:'#f87171', withdrawn:'#5a5a72' };
+const STATUS_COLORS = { applied: '#e8a820', screening: '#5aabf0', interviewing: '#00c896', offer: '#c084fc', accepted: '#34d399', rejected: '#f87171', withdrawn: '#5a5a72' };
 
 const sendStatusChangeNotification = async (userEmail, application, oldStatus, newStatus, userId) => {
   try {
     if (userId) {
-      const { allowed, email } = await canSend(userId, 'statusChanges');
-      if (!allowed) return;
-      userEmail = email || userEmail;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, notifMasterEnabled: true }
+      });
+      if (!user || user.notifMasterEnabled === false) return;
+      userEmail = user.email || userEmail;
     }
     const color = STATUS_COLORS[newStatus?.toLowerCase()] || '#00c896';
     await transporter.sendMail({
-      from:    `"Job Tracker" <${process.env.EMAIL_USER}>`,
-      to:      userEmail,
+      from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
       subject: `📋 Status Update: ${application.companyName} – ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
@@ -123,8 +126,8 @@ const sendInterviewReminder = async (userId, application) => {
     const { allowed, email } = await canSend(userId, 'interviewReminders');
     if (!allowed) return;
     await transporter.sendMail({
-      from:    `"Job Tracker" <${process.env.EMAIL_USER}>`,
-      to:      email,
+      from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
+      to: email,
       subject: `🎯 Interview Tomorrow: ${application.companyName} – ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
@@ -135,7 +138,7 @@ const sendInterviewReminder = async (userId, application) => {
           <div style="${bodyStyle}">
             ${row('Company', application.companyName)}
             ${row('Position', application.jobTitle)}
-            ${application.followUpDate ? row('Date', new Date(application.followUpDate).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})) : ''}
+            ${application.followUpDate ? row('Date', new Date(application.followUpDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })) : ''}
             <div style="margin-top:20px;padding:14px 16px;background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.2);border-radius:10px;">
               <div style="font-size:12px;font-weight:700;color:#00c896;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Quick Tips</div>
               <div style="font-size:13px;color:#7e7e96;line-height:1.6;">Research the company • Review your resume • Prepare questions • Test your tech setup if remote</div>
@@ -157,12 +160,12 @@ const sendNewApplicationEmail = async (userEmail, application, userId) => {
       userEmail = email || userEmail;
     }
     const appliedDate = application.applicationDate
-      ? new Date(application.applicationDate).toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
-      : new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+      ? new Date(application.applicationDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     await transporter.sendMail({
-      from:    `"Job Tracker" <${process.env.EMAIL_USER}>`,
-      to:      userEmail,
+      from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
       subject: `✅ Application Tracked: ${application.companyName} – ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
