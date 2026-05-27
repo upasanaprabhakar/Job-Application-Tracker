@@ -32,7 +32,6 @@ const canSend = async (userId, prefKey) => {
     });
     if (!user) return { allowed: false };
     if (user.notifMasterEnabled === false) return { allowed: false };
-    // map frontend key → prisma field
     const map = {
       statusChanges: 'notifStatusChanges',
       followUpReminders: 'notifFollowUpReminders',
@@ -58,7 +57,7 @@ const sendFollowUpReminder = async (userEmail, application, userId) => {
     await transporter.sendMail({
       from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
       to: userEmail,
-      subject: `⏰ Follow-up Reminder: ${application.companyName} – ${application.jobTitle}`,
+      subject: `Follow-up Reminder: ${application.companyName} - ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
           <div style="${headerStyle}">
@@ -85,18 +84,15 @@ const STATUS_COLORS = { applied: '#e8a820', screening: '#5aabf0', interviewing: 
 const sendStatusChangeNotification = async (userEmail, application, oldStatus, newStatus, userId) => {
   try {
     if (userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true, notifMasterEnabled: true }
-      });
-      if (!user || user.notifMasterEnabled === false) return;
-      userEmail = user.email || userEmail;
+      const { allowed, email } = await canSend(userId, 'statusChanges');
+      if (!allowed) return;
+      userEmail = email || userEmail;
     }
     const color = STATUS_COLORS[newStatus?.toLowerCase()] || '#00c896';
     await transporter.sendMail({
       from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
       to: userEmail,
-      subject: `📋 Status Update: ${application.companyName} – ${application.jobTitle}`,
+      subject: `Status Update: ${application.companyName} - ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
           <div style="${headerStyle}">
@@ -109,7 +105,7 @@ const sendStatusChangeNotification = async (userEmail, application, oldStatus, n
             <div style="${labelStyle}">Status Change</div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
               <span style="font-size:13px;color:#7e7e96;padding:4px 10px;background:rgba(255,255,255,0.05);border-radius:6px;">${oldStatus}</span>
-              <span style="color:#7e7e96;">→</span>
+              <span style="color:#7e7e96;">to</span>
               <span style="font-size:13px;font-weight:700;color:${color};padding:4px 10px;background:${color}18;border:1px solid ${color}40;border-radius:6px;">${newStatus}</span>
             </div>
           </div>
@@ -128,12 +124,12 @@ const sendInterviewReminder = async (userId, application) => {
     await transporter.sendMail({
       from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: `🎯 Interview Tomorrow: ${application.companyName} – ${application.jobTitle}`,
+      subject: `Interview Reminder: ${application.companyName} - ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
           <div style="${headerStyle}">
             <div style="font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Interview Reminder</div>
-            <div style="font-size:22px;font-weight:700;color:#fff;">You've got an interview!</div>
+            <div style="font-size:22px;font-weight:700;color:#fff;">You have an interview coming up</div>
           </div>
           <div style="${bodyStyle}">
             ${row('Company', application.companyName)}
@@ -141,7 +137,7 @@ const sendInterviewReminder = async (userId, application) => {
             ${application.followUpDate ? row('Date', new Date(application.followUpDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })) : ''}
             <div style="margin-top:20px;padding:14px 16px;background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.2);border-radius:10px;">
               <div style="font-size:12px;font-weight:700;color:#00c896;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Quick Tips</div>
-              <div style="font-size:13px;color:#7e7e96;line-height:1.6;">Research the company • Review your resume • Prepare questions • Test your tech setup if remote</div>
+              <div style="font-size:13px;color:#7e7e96;line-height:1.6;">Research the company - Review your resume - Prepare questions - Test your tech setup if remote</div>
             </div>
           </div>
           <div style="${footerStyle}">You're receiving this because interview reminders are enabled in your Job Tracker settings.</div>
@@ -155,9 +151,12 @@ const sendInterviewReminder = async (userId, application) => {
 const sendNewApplicationEmail = async (userEmail, application, userId) => {
   try {
     if (userId) {
-      const { allowed, email } = await canSend(userId, 'statusChanges');
-      if (!allowed) return;
-      userEmail = email || userEmail;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, notifMasterEnabled: true },
+      });
+      if (!user || user.notifMasterEnabled === false) return;
+      userEmail = user.email || userEmail;
     }
     const appliedDate = application.applicationDate
       ? new Date(application.applicationDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -166,12 +165,12 @@ const sendNewApplicationEmail = async (userEmail, application, userId) => {
     await transporter.sendMail({
       from: `"Job Tracker" <${process.env.EMAIL_USER}>`,
       to: userEmail,
-      subject: `✅ Application Tracked: ${application.companyName} – ${application.jobTitle}`,
+      subject: `Application Tracked: ${application.companyName} - ${application.jobTitle}`,
       html: `<div style="font-family:'Segoe UI',Arial,sans-serif;background:#12131a;padding:0;margin:0;">
         <div style="${wrapStyle}">
           <div style="${headerStyle}">
             <div style="font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">New Application</div>
-            <div style="font-size:22px;font-weight:700;color:#fff;">You're in the running! 🚀</div>
+            <div style="font-size:22px;font-weight:700;color:#fff;">Application added successfully</div>
           </div>
           <div style="${bodyStyle}">
             ${row('Company', application.companyName)}
@@ -182,7 +181,7 @@ const sendNewApplicationEmail = async (userEmail, application, userId) => {
             <div style="margin-top:20px;padding:14px 16px;background:rgba(0,200,150,0.06);border:1px solid rgba(0,200,150,0.2);border-radius:10px;">
               <div style="font-size:12px;font-weight:700;color:#00c896;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">What's next?</div>
               <div style="font-size:13px;color:#7e7e96;line-height:1.6;">
-                Set a follow-up reminder in 5–7 days • Connect with someone at the company • Keep applying — consistency wins
+                Set a follow-up reminder in 5-7 days - Connect with someone at the company - Keep applying, consistency wins
               </div>
             </div>
           </div>
